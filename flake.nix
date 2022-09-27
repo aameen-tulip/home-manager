@@ -45,8 +45,7 @@
           , configuration ? null, extraModules ? null, stateVersion ? null
           , username ? null, homeDirectory ? null, system ? null }@args:
           let
-            throwForRemovedArg = v:
-              lib.throwIf (v != null) ''
+            msgForRemovedArg = ''
                 The 'homeManagerConfiguration' arguments
 
                   - 'configuration',
@@ -60,12 +59,16 @@
                 'modules'. See the 22.11 release notes for more.
               '';
 
-            throwForRemovedArgs = throwForRemovedArg configuration # \
-              throwForRemovedArg username # \
-              throwForRemovedArg homeDirectory # \
-              throwForRemovedArg stateVersion # \
-              throwForRemovedArg extraModules # \
-              throwForRemovedArg system;
+            throwForRemovedArgs = v: let
+              used = builtins.filter (n: ( args.${n} or null) != null) [
+                "configuration" "username" "homeDirectory"
+                "stateVersion" "extraModules" "system"
+              ];
+              msg = msgForRemovedArg +
+                    "\n\nDeprecated args passed: " +
+                    (builtins.concatStringsSep " " used);
+            in lib.throwIf (used != []) msg v;
+
           in throwForRemovedArgs (import ./modules {
             inherit pkgs lib check extraSpecialArgs;
             configuration = { ... }: {
